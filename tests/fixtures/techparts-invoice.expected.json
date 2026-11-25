@@ -1,0 +1,33 @@
+{
+  "source": "ocr",
+  "vendor": "TechParts Ltd",
+  "invoiceNumber": "INV-8831",
+  "date": "2026-02-27",
+  "totalEur": 919.2,
+  "vatEur": 153.2,
+  "vatRate": 20,
+  "lines": [
+    {
+      "description": "4x Industrial ATX motherboard ",
+      "qty": 4,
+      "unit": "pcs",
+      "amount": 596
+    },
+    {
+      "description": "2x 32GB DDR5 RAM kit ",
+      "qty": 2,
+      "unit": "pcs",
+      "amount": 170
+    }
+  ],
+  "confidence": {
+    "vendor": 92,
+    "invoiceNumber": 88,
+    "date": 90,
+    "totalEur": 85,
+    "vatEur": 82,
+    "lines": 80
+  },
+  "validated": true,
+  "missing": []
+}

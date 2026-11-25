@@ -1,0 +1,22 @@
+{
+  "source": "ocr",
+  "vendor": "Draft statement, source unverified",
+  "invoiceNumber": "2026-0099",
+  "date": "Unknown",
+  "totalEur": 45,
+  "vatEur": 0,
+  "vatRate": 0,
+  "lines": [],
+  "confidence": {
+    "vendor": 92,
+    "invoiceNumber": 88,
+    "date": 90,
+    "totalEur": 85,
+    "vatEur": 82,
+    "lines": 0
+  },
+  "validated": false,
+  "missing": [
+    "date"
+  ]
+}
