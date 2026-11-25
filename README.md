@@ -1,9 +1,19 @@
 # Nexus Automations — verifiable showcase site
 
-[![CI](https://github.com/ibraramin/automation-portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/ibraramin/automation-portfolio/actions/workflows/ci.yml)
+**Custom n8n + AI automation for WhatsApp, web, email and phone — with the core logic backed by offline, repeatable tests and a two-minute demo.**
 
-> The badge tracks the default branch. The verifiability changes in this session are
-> local and unpushed, so it will show the previous state until they are pushed.
+[![CI](https://github.com/ibraramin/automation-portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/ibraramin/automation-portfolio/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-2ea44f.svg)](LICENSE)
+[![Node >= 26](https://img.shields.io/badge/Node-%3E%3D26-339933.svg)](https://nodejs.org/)
+[![Release: v0.1.0](https://img.shields.io/badge/release-v0.1.0-blueviolet.svg)](https://github.com/ibraramin/automation-portfolio/releases)
+
+> **Status of this branch.** The verifiability work lives on `feat/verifiability`,
+> which is being pushed with a pull request open against `main`. The CI badge above
+> tracks `main`, so it still shows the pre-merge state and will turn green only
+> after this change is merged — not before. v0.1.0 is the release being published
+> with this change.
+
+![Nexus Automations — automation for small businesses, delivered in your timezone](public/og-image.png)
 
 Client-facing showcase for **Nexus Automations**: custom n8n + AI automation across
 WhatsApp, web, email and phone. This repository is the interactive front end. The
@@ -15,25 +25,17 @@ offline, repeatable tests, plus a one-command demo that exercises both flows.
 > tracked in `docs/specs/Omni-Unified-Spec.md`, `docs/plans/Omni-Unified.md` and
 > `blueprints/README.md`. This README describes this repo as it exists today.
 
-## What runs where
+![Nexus mock demo — recorded offline end-to-end run](docs/assets/nexus-demo.gif)
 
-```mermaid
-flowchart LR
-    W["webhook / API message"] --> OCR["OCR parser<br/>lib/ocr-parser.ts"]
-    OCR --> J["structured JSON<br/>Extraction"]
-    J --> OB["durable outbox<br/>lib/outbox.mjs + node:sqlite"]
-    OB --> WA["WhatsApp fake gateway<br/>in-memory"]
-    M["mock adapters<br/>NEXUS_MOCK=1"] -. feeds fixture text .-> OCR
-    M -. receives sent messages .-> WA
-```
+`NEXUS_MOCK=1 npm run demo` prints five numbered steps: mock guard, fixture
+seeding through the fake OCR adapter, negative-fixture flagging, dedup +
+outbox, and a flush with one injected transient gateway failure. It ends with
+`PASS` and a non-zero exit on any failed assertion.
 
-In the shipped website the OCR text comes from tesseract.js in the browser. In
-tests and in the demo the *same* parser consumes checked-in text fixtures
-through an in-memory fake OCR adapter. Replies are queued in a real SQLite
-outbox and delivered to an injected fake WhatsApp gateway — no provider token,
-no HTTP request, no n8n execution.
+## Verify in 2 minutes
 
-## Commands (copy-paste)
+Everything below runs offline, with no provider token, no HTTP request and no
+n8n execution.
 
 ```bash
 npm ci                       # install exactly from package-lock.json
@@ -58,16 +60,27 @@ native TypeScript type stripping in `node --test` and stable `node:sqlite`.
 `package.json` therefore declares `engines.node >= 26` (earlier Node versions
 cannot run these tests). Local verification ran on Node 26.11.1.
 
-## Mock-mode demo
+## Architecture
 
-![Nexus mock demo](docs/assets/nexus-demo.gif)
+```mermaid
+flowchart LR
+    W["webhook / API message"] --> OCR["OCR parser<br/>lib/ocr-parser.ts"]
+    OCR --> J["structured JSON<br/>Extraction"]
+    J --> OB["durable outbox<br/>lib/outbox.mjs + node:sqlite"]
+    OB --> WA["WhatsApp fake gateway<br/>in-memory"]
+    M["mock adapters<br/>NEXUS_MOCK=1"] -. feeds fixture text .-> OCR
+    M -. receives sent messages .-> WA
+```
 
-`NEXUS_MOCK=1 npm run demo` prints five numbered steps: mock guard, fixture
-seeding through the fake OCR adapter, negative-fixture flagging, dedup +
-outbox, and a flush with one injected transient gateway failure. It ends with
-`PASS` and a non-zero exit on any failed assertion.
+In the shipped website the OCR text comes from tesseract.js in the browser. In
+tests and in the demo the *same* parser consumes checked-in text fixtures
+through an in-memory fake OCR adapter. Replies are queued in a real SQLite
+outbox and delivered to an injected fake WhatsApp gateway — no provider token,
+no HTTP request, no n8n execution.
 
-## Test layout
+## Features
+
+The verifiable core, file by file:
 
 - `lib/ocr-parser.ts` — pure `parseInvoiceText(text): Extraction`, extracted
   from `components/demos/InvoiceReader.tsx` (the component now imports it).
@@ -82,6 +95,21 @@ outbox, and a flush with one injected transient gateway failure. It ends with
   injected gateway: duplicate ids ignored, replies queued, bounded retries,
   permanent failures marked `failed`, and a file-backed restart test.
 - `scripts/demo.mjs` — the offline end-to-end walkthrough described above.
+
+## Results at a glance
+
+| Area | Verified result |
+| --- | --- |
+| Tests | **16/16 pass** — golden OCR tests + outbox tests |
+| Build | **15/15 static pages generated** into `out/` |
+| Demo | Ends with **PASS**; **3 replies sent** |
+| Fixtures | 3: Acme, TechParts (positive) and `incomplete-invoice.txt` (negative) |
+| Confidence floors | vendor 92 · invoice # 88 · date 90 · total 85 · VAT 82 · lines 80 (lines 0 when absent) |
+| Outbox | `maxAttempts` 3 · dedup via `seen_messages` primary key · stale-sending lease reclaim · injected fake gateway |
+| Stack | Next.js 16.3.0 · React 19 · TypeScript strict |
+| Runtime | Node >= 26 (native TS stripping + `node:sqlite`); verified on Node 26.11.1 |
+| Dependencies | Zero new external dependencies |
+| License | MIT |
 
 ## Environment variables
 
