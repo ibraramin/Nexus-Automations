@@ -7,12 +7,6 @@
 [![Node >= 26](https://img.shields.io/badge/Node-%3E%3D26-339933.svg)](https://nodejs.org/)
 [![Release: v0.1.0](https://img.shields.io/badge/release-v0.1.0-blueviolet.svg)](https://github.com/ibraramin/automation-portfolio/releases)
 
-> **Status of this branch.** The verifiability work lives on `feat/verifiability`,
-> which is being pushed with a pull request open against `main`. The CI badge above
-> tracks `main`, so it still shows the pre-merge state and will turn green only
-> after this change is merged — not before. v0.1.0 is the release being published
-> with this change.
-
 ![Nexus Automations — automation for small businesses, delivered in your timezone](public/og-image.png)
 
 Client-facing showcase for **Nexus Automations**: custom n8n + AI automation across
@@ -167,6 +161,13 @@ server (for example `npx serve out`).
   integration would need provider idempotency keys.
 - **OCR upload is browser-only.** tesseract.js is lazy-loaded client side;
   the Node tests never invoke an OCR engine.
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) — static export, OCR and outbox flows, state model, file map.
+- [Usage](docs/USAGE.md) — local commands, fixtures, parser and outbox cookbook, offline demo.
+- [Deployment](docs/DEPLOYMENT.md) — static build, Cloudflare Workers assets, preview, Node/CI parity.
+- [Contributing](CONTRIBUTING.md) — branch workflow, DoD commands, CI checks and rules.
 
 ## License
 
