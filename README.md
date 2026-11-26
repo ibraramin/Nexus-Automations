@@ -7,7 +7,7 @@
 [![Node >= 26](https://img.shields.io/badge/Node-%3E%3D26-339933.svg)](https://nodejs.org/)
 [![Release: v0.1.0](https://img.shields.io/badge/release-v0.1.0-blueviolet.svg)](https://github.com/ibraramin/automation-portfolio/releases)
 
-![Nexus Automations — automation for small businesses, delivered in your timezone](public/og-image.png)
+![Nexus Automations — live desktop home page](docs/assets/nexus-hero-desktop.png)
 
 Client-facing showcase for **Nexus Automations**: custom n8n + AI automation across
 WhatsApp, web, email and phone. This repository is the interactive front end. The
