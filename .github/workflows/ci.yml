@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Node 26 matches the local verifiability run. It gives `node --test`
+      # native TypeScript type stripping and a stable `node:sqlite`, so the
+      # offline tests need no extra runner or dependencies.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npm run demo
+        env:
+          NEXUS_MOCK: "1"

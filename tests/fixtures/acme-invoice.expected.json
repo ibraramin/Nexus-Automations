@@ -1,0 +1,33 @@
+{
+  "source": "ocr",
+  "vendor": "Acme Supplies GmbH",
+  "invoiceNumber": "2026-0142",
+  "date": "12.03.2026",
+  "totalEur": 1485.12,
+  "vatEur": 237.12,
+  "vatRate": 19,
+  "lines": [
+    {
+      "description": "6x Ergo office chair ",
+      "qty": 6,
+      "unit": "pcs",
+      "amount": 960
+    },
+    {
+      "description": "6x LED desk lamp, dimmable ",
+      "qty": 6,
+      "unit": "pcs",
+      "amount": 288
+    }
+  ],
+  "confidence": {
+    "vendor": 92,
+    "invoiceNumber": 88,
+    "date": 90,
+    "totalEur": 85,
+    "vatEur": 82,
+    "lines": 80
+  },
+  "validated": true,
+  "missing": []
+}

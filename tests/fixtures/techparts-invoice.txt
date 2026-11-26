@@ -1,0 +1,7 @@
+TechParts Ltd
+Invoice number: INV-8831
+Date: 2026-02-27
+4x Industrial ATX motherboard € 596.00
+2x 32GB DDR5 RAM kit € 170.00
+VAT: 153.20 EUR (VAT rate: 20%)
+Total: 919.20 EUR

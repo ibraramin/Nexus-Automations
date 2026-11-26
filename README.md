@@ -1,74 +1,173 @@
-> **Pivot (2026-08-27): unified 00-omni-chat-core is the main build — specs 01–10 subsumed for traceability (04 is a superseded slice), 11 remains separate.**
-> See `docs/specs/Omni-Unified-Spec.md` · `docs/plans/Omni-Unified.md` · `blueprints/README.md`.
+# Nexus Automations — verifiable showcase site
 
-# Nexus Automations - Showcase Site
+**Custom n8n + AI automation for WhatsApp, web, email and phone — with the core logic backed by offline, repeatable tests and a two-minute demo.**
 
-Client-facing showcase for **Nexus Automations** - an automation services company selling **custom n8n + AI automation across WhatsApp, web, email and phone** to small businesses. Goal: convert visitors into **free automation audit** bookings via live interactive demos + downloadable n8n workflow lead magnets.
+[![CI](https://github.com/ibraramin/automation-portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/ibraramin/automation-portfolio/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-2ea44f.svg)](LICENSE)
+[![Node >= 26](https://img.shields.io/badge/Node-%3E%3D26-339933.svg)](https://nodejs.org/)
+[![Release: v0.1.0](https://img.shields.io/badge/release-v0.1.0-blueviolet.svg)](https://github.com/ibraramin/automation-portfolio/releases)
 
-**Live repo:** [github.com/ibraramin/automation-portfolio](https://github.com/ibraramin/automation-portfolio)
+> **Status of this branch.** The verifiability work lives on `feat/verifiability`,
+> which is being pushed with a pull request open against `main`. The CI badge above
+> tracks `main`, so it still shows the pre-merge state and will turn green only
+> after this change is merged — not before. v0.1.0 is the release being published
+> with this change.
 
-## Stack
+![Nexus Automations — automation for small businesses, delivered in your timezone](public/og-image.png)
 
-- Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind CSS v4
-- tesseract.js (client-side OCR for the invoice demo uploads, lazy-loaded)
-- Light/dark themes: manual toggle in header, system-preference default, persisted (demos intentionally stay dark)
-- Animated hero workflow pipeline (CSS/JS only, reduced-motion aware)
-- Zero backend: all demos run in the browser; contact form posts to Web3Forms with a mailto fallback until an access key is set
+Client-facing showcase for **Nexus Automations**: custom n8n + AI automation across
+WhatsApp, web, email and phone. This repository is the interactive front end. The
+point of the verifiability pass is that the interesting logic is no longer only
+behind a browser click: the invoice parser and the webhook/outbox have real,
+offline, repeatable tests, plus a one-command demo that exercises both flows.
 
-## Quick start
+> Prior pivot context: the unified `00-omni-chat-core` build and specs 01–10 are
+> tracked in `docs/specs/Omni-Unified-Spec.md`, `docs/plans/Omni-Unified.md` and
+> `blueprints/README.md`. This README describes this repo as it exists today.
+
+![Nexus mock demo — recorded offline end-to-end run](docs/assets/nexus-demo.gif)
+
+`NEXUS_MOCK=1 npm run demo` prints five numbered steps: mock guard, fixture
+seeding through the fake OCR adapter, negative-fixture flagging, dedup +
+outbox, and a flush with one injected transient gateway failure. It ends with
+`PASS` and a non-zero exit on any failed assertion.
+
+## Verify in 2 minutes
+
+Everything below runs offline, with no provider token, no HTTP request and no
+n8n execution.
 
 ```bash
-npm install
-npm run dev      # http://localhost:3000
-npm run build    # production build (Turbopack)
-npx eslint .     # lint
-npx tsc --noEmit # typecheck
+npm ci                       # install exactly from package-lock.json
+npm test                     # node --test: golden OCR tests + outbox tests
+npm run build                # Next.js static export into out/
+NEXUS_MOCK=1 npm run demo    # both flows end to end, offline
+npx tsc --noEmit             # typecheck
+npx eslint .                 # lint
 ```
+
+Local development and deployment:
+
+```bash
+npm run dev      # http://localhost:3000
+npm run deploy   # npm run build && wrangler deploy (static assets from out/)
+```
+
+`npm test` uses Node's built-in runner (`node --test`) and built-in assertions
+and `node:sqlite`; no test runner or extra dependency was added. CI pins
+**Node 26**, matching the runtime used to verify this repo, because that gives
+native TypeScript type stripping in `node --test` and stable `node:sqlite`.
+`package.json` therefore declares `engines.node >= 26` (earlier Node versions
+cannot run these tests). Local verification ran on Node 26.11.1.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    W["webhook / API message"] --> OCR["OCR parser<br/>lib/ocr-parser.ts"]
+    OCR --> J["structured JSON<br/>Extraction"]
+    J --> OB["durable outbox<br/>lib/outbox.mjs + node:sqlite"]
+    OB --> WA["WhatsApp fake gateway<br/>in-memory"]
+    M["mock adapters<br/>NEXUS_MOCK=1"] -. feeds fixture text .-> OCR
+    M -. receives sent messages .-> WA
+```
+
+In the shipped website the OCR text comes from tesseract.js in the browser. In
+tests and in the demo the *same* parser consumes checked-in text fixtures
+through an in-memory fake OCR adapter. Replies are queued in a real SQLite
+outbox and delivered to an injected fake WhatsApp gateway — no provider token,
+no HTTP request, no n8n execution.
+
+## Features
+
+The verifiable core, file by file:
+
+- `lib/ocr-parser.ts` — pure `parseInvoiceText(text): Extraction`, extracted
+  from `components/demos/InvoiceReader.tsx` (the component now imports it).
+- `tests/fixtures/*.txt` — **3 fixtures**: 2 positive invoices (Acme,
+  TechParts) and 1 negative invoice (`incomplete-invoice.txt`, missing date).
+- `tests/fixtures/*.expected.json` — checked-in golden outputs, deep-equality
+  compared for every fixture.
+- `tests/ocr.test.mjs` — golden tests, measured per-field confidence floors
+  (vendor 92, invoice # 88, date 90, total 85, VAT 82, lines 80) and an
+  explicit "negative fixture is flagged" assertion.
+- `lib/outbox.mjs` + `tests/outbox.test.mjs` — SQLite dedup/outbox with an
+  injected gateway: duplicate ids ignored, replies queued, bounded retries,
+  permanent failures marked `failed`, and a file-backed restart test.
+- `scripts/demo.mjs` — the offline end-to-end walkthrough described above.
+
+## Results at a glance
+
+| Area | Verified result |
+| --- | --- |
+| Tests | **16/16 pass** — golden OCR tests + outbox tests |
+| Build | **15/15 static pages generated** into `out/` |
+| Demo | Ends with **PASS**; **3 replies sent** |
+| Fixtures | 3: Acme, TechParts (positive) and `incomplete-invoice.txt` (negative) |
+| Confidence floors | vendor 92 · invoice # 88 · date 90 · total 85 · VAT 82 · lines 80 (lines 0 when absent) |
+| Outbox | `maxAttempts` 3 · dedup via `seen_messages` primary key · stale-sending lease reclaim · injected fake gateway |
+| Stack | Next.js 16.3.0 · React 19 · TypeScript strict |
+| Runtime | Node >= 26 (native TS stripping + `node:sqlite`); verified on Node 26.11.1 |
+| Dependencies | Zero new external dependencies |
+| License | MIT |
+
+## Environment variables
+
+Names only — no values are committed, and `.env.example` is the only tracked
+env file (`.env*` is otherwise ignored).
+
+| Name | Needed locally? | Purpose |
+| --- | --- | --- |
+| `NEXUS_MOCK` | Only for `npm run demo` | Switches to in-memory OCR/gateway adapters; the command above sets it. |
+| `WHATSAPP_ACCESS_TOKEN` | No | Reserved name for a future integration; unused here. |
+| `WHATSAPP_PHONE_NUMBER_ID` | No | Reserved name; unused here. |
+| `WEBHOOK_VERIFY_TOKEN` | No | Reserved name; unused here. |
+| `OPENAI_API_KEY` | No | Reserved name; unused here. |
 
 ## Structure
 
 ```
-app/
-  page.tsx              # Home: hero → proof → services → demos → process → CTA
-  services/page.tsx     # 11 service lines (outcome-first, no pricing, driven by services-data.ts)
-  demos/page.tsx        # Demo index
-  demos/[slug]/page.tsx # Demo detail (async params, SSG, JSON download)
-  contact/page.tsx      # Audit form (Web3Forms + mailto fallback)
-components/
-  site/                 # Header, Footer, CTASection, DemosGrid, ServicesGrid, ...
-  demos/                # WhatsAppOrderBot, InvoiceReader, LeadResponse, MeetingMinutesBot,
-                        # SpreadsheetRescue, EmailTriage (interactive)
-lib/demos.ts            # DemoMeta contract + DEMOS registry (drives /demos grid)
-public/downloads/       # n8n workflow JSONs (lead magnets)
-docs/plans + docs/specs # Plan + repo/feature specs
-blueprints/               # Service spec-sheet library (11 sheets) → tested n8n blueprints
+app/                       # Home, services, demos, contact, privacy
+components/demos/          # WhatsAppOrderBot, InvoiceReader, and other demos
+lib/demos.ts               # Demo registry
+lib/ocr-parser.ts          # Pure invoice extraction (tested)
+lib/outbox.mjs             # SQLite dedup + outbox (tested)
+tests/                     # node:test suites + fixtures/goldens
+scripts/demo.mjs           # NEXUS_MOCK=1 end-to-end demo
+public/downloads/          # n8n workflow JSON lead magnets (static data)
+blueprints/                # Service spec sheets / example workflow JSON
+docs/plans, docs/specs     # Repo and feature specs
 ```
 
-## How to add a demo
+## Deploy
 
-1. Add the entry to `lib/demos.ts` (`slug`, `title`, `tagline`, `markets`, `metric`, `tech`, `jsonFile`, `description`).
-2. Build the interactive component in `components/demos/` ("use client", add `data-demo-interacted` on first interaction).
-3. Wire it in `app/demos/[slug]/page.tsx` (slug → component map).
-4. Drop the matching n8n workflow JSON in `public/downloads/`.
+The site is a fully static export (`output: "export"` in `next.config.ts`).
+`next build` writes plain HTML/CSS/JS into `out/`, and `wrangler.jsonc` serves
+that directory as Cloudflare Workers assets. There is no Node server, so
+`npm run start` is not usable with this export; preview with any static file
+server (for example `npx serve out`).
 
-## Brand + contact - one file
+## Limitations (honest)
 
-Everything (brand name, WhatsApp, email, CTA) lives in `components/site/config.ts`. Contact currently: WhatsApp `wa.me/8801333095960`, email `ibrarshafin2002@gmail.com`.
+- **Static export only.** No `app/api` routes and no server runtime can be
+  added without changing the deployment model.
+- **No real API calls.** The contact form posts to Web3Forms with a mailto
+  fallback; the demos do not call OpenAI, WhatsApp, bKash or Pathao. The n8n
+  JSON under `public/downloads/` and `blueprints/` is static downloadable
+  data, not code executed by this repo.
+- **WhatsApp bot is a simulation.** `components/demos/WhatsAppOrderBot.tsx`
+  is a client-side state machine with `setTimeout` and fake bKash/Pathao
+  steps. The demo's gateway is an in-memory array, not a WhatsApp client.
+- **Confidence numbers are heuristic constants**, not calibrated model
+  probabilities: all fields report fixed scores, and `lines` drops to 0 when
+  no line items were found. They are useful as a regression signal, not as a
+  measure of extraction correctness.
+- **At-least-once delivery.** The outbox retries after gateway errors; a
+  gateway that sends and then throws could be delivered twice. A production
+  integration would need provider idempotency keys.
+- **OCR upload is browser-only.** tesseract.js is lazy-loaded client side;
+  the Node tests never invoke an OCR engine.
 
-## Deploy (Cloudflare Workers static assets)
+## License
 
-The site is a fully static export (`output: "export"` in `next.config.ts`): `next build` emits plain HTML/CSS/JS into `out/`. Cloudflare Workers serves those files directly through the `assets` setting in `wrangler.jsonc` (`assets.directory = "./out"`, with `not_found_handling: "404-page"`).
-
-```bash
-npm run deploy   # runs npm run build && wrangler deploy
-```
-
-Note: `npm run start` is **not available** with a static export. There is no Node server to start; the `out/` directory is the deployable artifact. For local preview of the export, serve the folder with any static server (for example `npx serve out`).
-
-## Quality gates
-
-`eslint` clean · `tsc --noEmit` clean · `npm run build` OK (14 routes, 6 SSG demos, /privacy). Council-reviewed; all findings resolved.
-
-## Deferred (Phase 2)
-
-Analytics on `data-demo-interacted`/`data-json-downloaded`, voice AI demo, demos for the five newest services (support triage, prospect outbound, review management, e-commerce ops, automation debugging), real case studies, final brand + domain, tesseract asset self-hosting, branded email alias.
+MIT — see [LICENSE](LICENSE). Copyright (c) 2026 Ibrar Amin.
