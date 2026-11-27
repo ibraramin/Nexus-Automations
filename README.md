@@ -23,13 +23,13 @@ Nexus Automations is the public front end for WhatsApp, web, email and phone wor
 - **OCR invoice processing.** Upload an invoice in the browser and tesseract.js reads it, then a pure parser (`lib/ocr-parser.ts`) extracts vendor, invoice number, date, VAT, totals and line items. The same parser is checked against three committed fixtures with golden outputs and per-field confidence floors.
 - **WhatsApp order bot.** A browser walkthrough takes a customer from product and size selection through bKash payment confirmation to Pathao courier dispatch. Behind the chat, replies move through a SQLite outbox with deduplication and bounded retries.
 - **n8n workflows.** Six ready-to-import workflow JSON files ship as static downloads, covering the order bot, invoice reader, lead response, meeting minutes, spreadsheet cleanup and email triage.
-- **Browser demos.** Six interactive demos run entirely client side on the static site, with no account, token or backend required. Start at the [demos index](https://nexusautomations.dev/demos) or open one directly:
-  - [WhatsApp Order Bot](https://nexusautomations.dev/demos/whatsapp-order-bot)
-  - [Invoice Reader](https://nexusautomations.dev/demos/ai-invoice-reader)
-  - [Lightning Lead Response](https://nexusautomations.dev/demos/lightning-lead-response)
-  - [Meeting Minutes Bot](https://nexusautomations.dev/demos/meeting-minutes-bot)
-  - [Spreadsheet Rescue](https://nexusautomations.dev/demos/spreadsheet-rescue)
-  - [Email Triage](https://nexusautomations.dev/demos/email-triage)
+- **Browser demos.** Six interactive demos run entirely client side, with no account, token or backend required. Run `npm run dev`, then open `http://localhost:3000/demos/`:
+  - `whatsapp-order-bot`
+  - `ai-invoice-reader`
+  - `lightning-lead-response`
+  - `meeting-minutes-bot`
+  - `spreadsheet-rescue`
+  - `email-triage`
 
 Demo URLs use the production domain configured in `app/layout.tsx`. Download the workflow JSON directly from the repository: [WhatsApp Order Bot](public/downloads/whatsapp-order-bot.json) · [Invoice Reader](public/downloads/ai-invoice-reader.json) · [Lead Response](public/downloads/lightning-lead-response.json) · [Meeting Minutes](public/downloads/meeting-minutes-bot.json) · [Spreadsheet Rescue](public/downloads/spreadsheet-rescue.json) · [Email Triage](public/downloads/email-triage.json)
 
@@ -126,7 +126,7 @@ docs/plans, docs/specs     # Repository and feature documentation
 
 `next.config.ts` sets `output: "export"`. `next build` writes plain HTML, CSS and JavaScript into `out/`, and `wrangler.jsonc` serves that directory as Cloudflare Workers assets with a 404 fallback. There is no Node server, so `npm run start` is not a deployment path. Preview the build with any static file server, for example `npx serve out`.
 
-The production domain configured in the site metadata is [nexusautomations.dev](https://nexusautomations.dev).
+Run locally with `npm run dev`; no hosted deployment is published in this repository.
 
 ## Documentation
 
