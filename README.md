@@ -11,7 +11,7 @@
 
 [![Launch video](docs/assets/brag.jpg)](docs/assets/brag.mp4)
 
-https://github.com/ibraramin/Nexus-Automations/raw/main/docs/assets/brag.mp4
+https://github.com/user-attachments/assets/82ab9469-00a3-479a-b46c-ca9b7b8db9e8
 
 
 ![Project showcase](https://github.com/ibraramin/Nexus-Automations/releases/download/v0.2.0/showcase.gif)
