@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://nexusautomations.dev"),
+  metadataBase: new URL("http://localhost:3000"),
   title: "Nexus Automations: Automation Solutions for Small Businesses",
   description:
     "Custom automation for small businesses: WhatsApp flows, AI document processing, lead response, booking and CRM sync, built around your workflow. Free automation audit.",
@@ -23,7 +23,6 @@ export const metadata: Metadata = {
       "Custom automation for small businesses: WhatsApp flows, AI document processing, lead response, booking and CRM sync, built around your workflow. Free automation audit.",
     type: "website",
     locale: "en_GB",
-    url: "https://nexusautomations.dev",
     siteName: "Nexus Automations",
     images: [
       {
