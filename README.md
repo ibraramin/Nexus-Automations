@@ -9,12 +9,12 @@
 
 ![Nexus Automations home page](docs/assets/nexus-hero-desktop.png)
 
-[![Launch video](https://github.com/ibraramin/Nexus-Automations/releases/download/v0.2.0/brag.jpg)](https://github.com/ibraramin/Nexus-Automations/releases/download/v0.2.0/brag.mp4)
+[![Launch video](docs/assets/brag.jpg)](docs/assets/brag.mp4)
 
-[Watch the 20-second launch video](https://github.com/ibraramin/Nexus-Automations/releases/download/v0.2.0/brag.mp4)
+https://github.com/ibraramin/Nexus-Automations/raw/main/docs/assets/brag.mp4
+
 
 ![Project showcase](https://github.com/ibraramin/Nexus-Automations/releases/download/v0.2.0/showcase.gif)
-
 
 Nexus Automations is the public front end for WhatsApp, web, email and phone workflow automation. Every flow you can click through in the browser is paired with a tested core: an invoice OCR parser and a durable reply outbox that run offline with no provider credentials.
 
@@ -33,7 +33,6 @@ Nexus Automations is the public front end for WhatsApp, web, email and phone wor
 
 Demo URLs use the production domain configured in `app/layout.tsx`. Download the workflow JSON directly from the repository: [WhatsApp Order Bot](public/downloads/whatsapp-order-bot.json) · [Invoice Reader](public/downloads/ai-invoice-reader.json) · [Lead Response](public/downloads/lightning-lead-response.json) · [Meeting Minutes](public/downloads/meeting-minutes-bot.json) · [Spreadsheet Rescue](public/downloads/spreadsheet-rescue.json) · [Email Triage](public/downloads/email-triage.json)
 
-![Nexus Automations offline demo, recorded end to end](docs/assets/nexus-demo.gif)
 
 The offline demo prints five numbered steps: mock guard, fixture seeding through the fake OCR adapter, negative fixture flagging, deduplication and outbox, then a flush with one injected transient gateway failure. It ends with `PASS` and exits non-zero on any failed assertion.
 
