@@ -5,9 +5,9 @@
 [![CI](https://github.com/ibraramin/automation-portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/ibraramin/automation-portfolio/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2ea44f.svg)](LICENSE)
 [![Node >= 26](https://img.shields.io/badge/Node-%3E%3D26-339933.svg)](https://nodejs.org/)
-[![Release: v0.1.0](https://img.shields.io/badge/release-v0.1.0-blueviolet.svg)](https://github.com/ibraramin/automation-portfolio/releases)
+[![Release: v0.2.0](https://img.shields.io/badge/release-v0.2.0-blueviolet.svg)](https://github.com/ibraramin/automation-portfolio/releases)
 
-![Nexus Automations — automation for small businesses, delivered in your timezone](public/og-image.png)
+![Nexus Automations — live desktop home page](docs/assets/nexus-hero-desktop.png)
 
 Client-facing showcase for **Nexus Automations**: custom n8n + AI automation across
 WhatsApp, web, email and phone. This repository is the interactive front end. The
@@ -28,13 +28,14 @@ outbox, and a flush with one injected transient gateway failure. It ends with
 
 ## Verify in 2 minutes
 
-Everything below runs offline, with no provider token, no HTTP request and no
-n8n execution.
+Everything below runs offline, with no provider token, no external HTTP request
+(the e2e tests serve `out/` on loopback) and no n8n execution.
 
 ```bash
 npm ci                       # install exactly from package-lock.json
-npm test                     # node --test: golden OCR tests + outbox tests
+npm test                     # node --test: 7 golden OCR + 12 outbox tests (19 pass)
 npm run build                # Next.js static export into out/
+npx playwright test          # 2 chromium e2e tests against out/ (needs build first)
 NEXUS_MOCK=1 npm run demo    # both flows end to end, offline
 npx tsc --noEmit             # typecheck
 npx eslint .                 # lint
@@ -48,7 +49,9 @@ npm run deploy   # npm run build && wrangler deploy (static assets from out/)
 ```
 
 `npm test` uses Node's built-in runner (`node --test`) and built-in assertions
-and `node:sqlite`; no test runner or extra dependency was added. CI pins
+and `node:sqlite`; no third-party runner was added for the unit suites.
+`@playwright/test` (pinned 1.63.0, dev-only) was added solely for the browser
+e2e checks against the static export; it is not used by `npm test`. CI pins
 **Node 26**, matching the runtime used to verify this repo, because that gives
 native TypeScript type stripping in `node --test` and stable `node:sqlite`.
 `package.json` therefore declares `engines.node >= 26` (earlier Node versions
@@ -89,12 +92,24 @@ The verifiable core, file by file:
   injected gateway: duplicate ids ignored, replies queued, bounded retries,
   permanent failures marked `failed`, and a file-backed restart test.
 - `scripts/demo.mjs` — the offline end-to-end walkthrough described above.
+- `playwright.config.ts` + `e2e/home.spec.ts` — 2 chromium e2e tests run against
+  the **shipped static export**: Playwright's webServer serves `out/` over
+  loopback with `python3 -m http.server` (no live URL, server route or real API
+  call; run `npm run build` first). They assert the H1 and both hero CTAs and
+  that the stat counters read `<0 min`/`0 wks` before scrolling and settle to
+  `<5 min`/`2 wks` afterwards — verifying that the shipped scroll-triggered
+  animation is correct (not a defect fix).
+- `lib/outbox.mjs` `stats()` — alongside the durable `outbox` rows, returns an
+  in-process `counters` object (`accepted`, `duplicate`, `enqueued`, `sent`,
+  `failed`, `attempts`) tracked via the injected fake gateway; no hosted
+  collector and no real provider calls. These counters reset on reopen.
 
 ## Results at a glance
 
 | Area | Verified result |
 | --- | --- |
-| Tests | **16/16 pass** — golden OCR tests + outbox tests |
+| Tests | **19/19 pass** — 7 golden OCR + 12 outbox tests (`node --test`) |
+| E2E | **2/2 Playwright chromium tests** pass against the static export (`out/`) served over loopback |
 | Build | **15/15 static pages generated** into `out/` |
 | Demo | Ends with **PASS**; **3 replies sent** |
 | Fixtures | 3: Acme, TechParts (positive) and `incomplete-invoice.txt` (negative) |
@@ -102,7 +117,7 @@ The verifiable core, file by file:
 | Outbox | `maxAttempts` 3 · dedup via `seen_messages` primary key · stale-sending lease reclaim · injected fake gateway |
 | Stack | Next.js 16.3.0 · React 19 · TypeScript strict |
 | Runtime | Node >= 26 (native TS stripping + `node:sqlite`); verified on Node 26.11.1 |
-| Dependencies | Zero new external dependencies |
+| Dependencies | One pinned dev-only test dependency, `@playwright/test` 1.63.0; no runtime dependency added (Chromium already cached; no browser-install step in the verified run) |
 | License | MIT |
 
 ## Environment variables
@@ -127,6 +142,8 @@ lib/demos.ts               # Demo registry
 lib/ocr-parser.ts          # Pure invoice extraction (tested)
 lib/outbox.mjs             # SQLite dedup + outbox (tested)
 tests/                     # node:test suites + fixtures/goldens
+playwright.config.ts       # chromium e2e config: serves out/ over loopback
+e2e/                       # Playwright static-site e2e specs
 scripts/demo.mjs           # NEXUS_MOCK=1 end-to-end demo
 public/downloads/          # n8n workflow JSON lead magnets (static data)
 blueprints/                # Service spec sheets / example workflow JSON
@@ -161,6 +178,11 @@ server (for example `npx serve out`).
   integration would need provider idempotency keys.
 - **OCR upload is browser-only.** tesseract.js is lazy-loaded client side;
   the Node tests never invoke an OCR engine.
+- **E2E scope and metrics are local.** Playwright covers the static export only
+  (no live URL or server runtime), and outbox `counters` are in-process values
+  from the injected fake gateway, not a hosted collector. The counters'
+  zero-to-final animation on scroll was verified as shipped behavior — it was
+  not a defect that needed fixing.
 
 ## Documentation
 

@@ -197,3 +197,120 @@ test("a crash on the final attempt marks the row failed, not stranded", async ()
     outbox.close();
   }
 });
+
+test("stats counters track accepted, duplicate and enqueued webhooks", () => {
+  const outbox = createOutbox({ gateway: countingGateway() });
+  try {
+    assert.deepEqual(outbox.stats().counters, {
+      accepted: 0,
+      duplicate: 0,
+      enqueued: 0,
+      sent: 0,
+      failed: 0,
+      attempts: 0,
+    });
+
+    outbox.handleWebhook(webhook("msg-010", "first"));
+    outbox.handleWebhook(webhook("msg-011", "second"));
+    outbox.handleWebhook(webhook("msg-010", "again"));
+
+    assert.deepEqual(outbox.stats().counters, {
+      accepted: 2,
+      duplicate: 1,
+      enqueued: 2,
+      sent: 0,
+      failed: 0,
+      attempts: 0,
+    });
+    assert.equal(outbox.stats().seen, 2);
+    assert.equal(outbox.stats().outbox.pending, 2);
+
+    // stats() hands back a snapshot, not the live counter object.
+    const snapshot = outbox.stats().counters;
+    snapshot.accepted = 99;
+    assert.equal(outbox.stats().counters.accepted, 2);
+  } finally {
+    outbox.close();
+  }
+});
+
+test("stats counters track attempts, sent and failed through a transient gateway failure", async () => {
+  let calls = 0;
+  const gateway = {
+    sent: [],
+    send: async (msg) => {
+      calls += 1;
+      if (calls === 1) throw new Error("temporary outage");
+      gateway.sent.push(msg);
+    },
+  };
+  const outbox = createOutbox({ gateway, maxAttempts: 3 });
+  try {
+    outbox.handleWebhook(webhook("msg-012", "recover"));
+    assert.deepEqual(outbox.stats().counters, {
+      accepted: 1,
+      duplicate: 0,
+      enqueued: 1,
+      sent: 0,
+      failed: 0,
+      attempts: 0,
+    });
+
+    await outbox.flush(); // attempt 1 fails
+    assert.deepEqual(outbox.stats().counters, {
+      accepted: 1,
+      duplicate: 0,
+      enqueued: 1,
+      sent: 0,
+      failed: 1,
+      attempts: 1,
+    });
+
+    await outbox.flush(); // attempt 2 succeeds
+    assert.deepEqual(outbox.stats().counters, {
+      accepted: 1,
+      duplicate: 0,
+      enqueued: 1,
+      sent: 1,
+      failed: 1,
+      attempts: 2,
+    });
+
+    await outbox.flush(); // nothing left to do: counters must not move
+    assert.equal(outbox.stats().counters.attempts, 2);
+    assert.equal(outbox.stats().counters.sent, 1);
+    assert.equal(gateway.sent.length, 1);
+    assert.equal(outbox.stats().outbox.sent, 1);
+  } finally {
+    outbox.close();
+  }
+});
+
+test("stats counters record every failed attempt up to the bounded limit", async () => {
+  const gateway = {
+    send: async () => {
+      throw new Error("permanent outage");
+    },
+  };
+  const outbox = createOutbox({ gateway, maxAttempts: 2 });
+  try {
+    outbox.handleWebhook(webhook("msg-013", "never delivered"));
+    await outbox.flush();
+    await outbox.flush();
+    await outbox.flush(); // terminal row is not retried
+
+    assert.deepEqual(outbox.stats().counters, {
+      accepted: 1,
+      duplicate: 0,
+      enqueued: 1,
+      sent: 0,
+      failed: 2,
+      attempts: 2,
+    });
+    // `counters.failed` counts failed delivery attempts; `outbox.failed` counts
+    // rows in the terminal failed state (one row here).
+    assert.equal(outbox.stats().outbox.failed, 1);
+  } finally {
+    outbox.close();
+  }
+});
